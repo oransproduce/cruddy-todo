@@ -3,7 +3,7 @@ const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
 const Promise = require('bluebird');
-const PromisifiedReadFileAsync = Promise.promisify(fs.readFile);
+
 
 
 // Public API - Fix these CRUD functions ///////////////////////////////////////
@@ -11,11 +11,11 @@ const PromisifiedReadFileAsync = Promise.promisify(fs.readFile);
 exports.create = (text, callback) => {
   var id = counter.getNextUniqueId((err, id) => {
     if (err) {
-      console.log("cannot read");
+      console.log('cannot read');
     } else {
       fs.writeFile(path.join(exports.dataDir, `${id}.txt`), text, (err) => {
         if (err) {
-          console.log("cant create file: ", err);
+          console.log('cant create file: ', err);
         } else {
           return callback(null, { id, text });
         }
@@ -24,23 +24,37 @@ exports.create = (text, callback) => {
   });
 };
 //  1) should return an empty array when there are no todos
+// // create results arr
+// let todos = [];
+// // Node.js | fs.readdir() Method lowercaseeeee dir
+// fs.readdir(exports.dataDir, (err, files) => {
+//   if (err) {
+//     console.log('Cannot read folder');
+//   } else {
+//     files.forEach(fileName => {
+//       let id = fileName.slice(0, 5);
+//       let todo = {id: id, text: id};
+//       todos.push(todo);
+//     });
+//     callback(err, todos);
+//   }
+// });
 //      2) should return an array with all saved todos
+const PromisifiedReadFileAsync = Promise.promisify(fs.readFile);
 exports.readAll = (callback) => {
-
-  // create results arr
-  let todos = [];
-  // Node.js | fs.readdir() Method lowercaseeeee dir
-  fs.readdir(exports.dataDir, (err, files) => {
-    if (err) {
-      console.log('Cannot read folder');
-    } else {
-      files.forEach(fileName => {
-        let id = fileName.slice(0, 5);
-        let todo = {id: id, text: id};
-        todos.push(todo);
+  let readdirAsync = Promise.promisify(fs.readdir);
+  readdirAsync(exports.dataDir).then((files) => {
+    var promiseArray = files.map((fileName) => {
+      return PromisifiedReadFileAsync(
+        path.join(exports.dataDir, fileName)
+      ).then((data) => {
+        return { id: fileName.slice(0, 5), text: data.toString() };
+      }).catch((err) => {
+        callback(err);
       });
-      callback(err, todos);
-    }
+    }); return Promise.all(promiseArray).then((results) => {
+      callback(null, results);
+    });
   });
 };
 

@@ -2,7 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
-
+const Promise = require('bluebird');
+const PromisifiedReadFileAsync = Promise.promisify(fs.readFile);
 
 
 // Public API - Fix these CRUD functions ///////////////////////////////////////
@@ -23,12 +24,8 @@ exports.create = (text, callback) => {
   });
 };
 //  1) should return an empty array when there are no todos
-//       2) should return an array with all saved todos
+//      2) should return an array with all saved todos
 exports.readAll = (callback) => {
-  // var data = _.map(items, (text, id) => {
-  //   return { id, text };
-  // });
-  // callback(null, data);
 
   // create results arr
   let todos = [];
@@ -37,7 +34,6 @@ exports.readAll = (callback) => {
     if (err) {
       console.log('Cannot read folder');
     } else {
-      //
       files.forEach(fileName => {
         let id = fileName.slice(0, 5);
         let todo = {id: id, text: id};
@@ -46,16 +42,9 @@ exports.readAll = (callback) => {
       callback(err, todos);
     }
   });
-
 };
 
 exports.readOne = (id, callback) => {
-  // var text = items[id];
-  // if (!text) {
-  //   callback(new Error(`No item with id: ${id}`));
-  // } else {
-  //   callback(null, { id, text });
-  // }
   fs.readFile(path.join(exports.dataDir, `${id}.txt`), (err, data) => {
     if (err) {
       callback(err);
